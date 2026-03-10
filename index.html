@@ -697,6 +697,124 @@
     border-top: 1px solid var(--border);
     margin: 24px 0;
   }
+
+  /* History Panel */
+  #historyPanel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .history-header-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .history-toggle-icon { transition: transform 0.2s; font-size: 10px; }
+  #historyPanel.open .history-toggle-icon { transform: rotate(180deg); }
+  .history-list { display: none; flex-direction: column; gap: 8px; margin-top: 14px; }
+  #historyPanel.open .history-list { display: flex; }
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .history-item:hover { border-color: var(--accent); }
+  .history-item-info { flex: 1; min-width: 0; }
+  .history-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .history-item-meta { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .history-item-del {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; padding: 4px 8px; border-radius: 4px;
+    font-size: 14px; line-height: 1; transition: all 0.2s; flex-shrink: 0; margin-left: 8px;
+  }
+  .history-item-del:hover { color: var(--danger); background: rgba(224,90,58,0.1); }
+
+  /* Select */
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 40px 14px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: all 0.2s;
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7368' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+  }
+  select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background-color: var(--surface);
+    box-shadow: 0 0 0 3px rgba(232,197,71,0.08);
+  }
+
+  /* Edit mode */
+  .btn-edit {
+    padding: 10px 18px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-edit.active { background: var(--accent); color: #0f0e0d; border-color: var(--accent); }
+  [contenteditable="true"] {
+    outline: 2px dashed var(--accent) !important;
+    outline-offset: 2px;
+    border-radius: 4px;
+    cursor: text;
+  }
+  .edit-notice {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    display: none;
+    align-self: center;
+  }
+  .edit-notice.visible { display: block; }
 </style>
 </head>
 <body>
@@ -721,6 +839,18 @@
     <h1>브랜드 <span>가이드라인</span><br>생성기</h1>
     <p class="subtitle">브랜드 정보를 입력하면 AI가 완성된 브랜드 가이드라인을 자동으로 만들어드립니다</p>
   </header>
+
+  <!-- History -->
+  <div id="historyPanel" style="display:none;">
+    <div class="history-header" onclick="toggleHistoryPanel()">
+      <div class="history-header-title">
+        📂 최근 생성 결과
+        <span class="history-toggle-icon" id="historyToggleIcon">▼</span>
+      </div>
+      <span id="historyCount" style="font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;"></span>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
 
   <!-- Form -->
   <div class="form-card" id="formSection">
@@ -752,6 +882,30 @@
         <input type="text" id="keywords" placeholder="예: 따뜻한, 아늑한, 감성적인, 신뢰감 있는">
       </div>
 
+      <div class="form-group">
+        <label>업종/카테고리</label>
+        <select id="category">
+          <option value="">선택 안함</option>
+          <option value="카페/음료">카페/음료</option>
+          <option value="패션/의류">패션/의류</option>
+          <option value="뷰티/화장품">뷰티/화장품</option>
+          <option value="IT/테크">IT/테크</option>
+          <option value="식품/F&B">식품/F&B</option>
+          <option value="건강/피트니스">건강/피트니스</option>
+          <option value="교육">교육</option>
+          <option value="인테리어/라이프스타일">인테리어/라이프스타일</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>GPT 모델</label>
+        <select id="modelSelect">
+          <option value="gpt-4o">GPT-4o (고품질)</option>
+          <option value="gpt-4o-mini">GPT-4o mini (빠름/저비용)</option>
+        </select>
+      </div>
+
       <div class="form-group full">
         <label>추가 설명 (선택)</label>
         <textarea id="extra" placeholder="경쟁사, 참고 브랜드, 특별히 원하는 방향 등 자유롭게 적어주세요"></textarea>
@@ -781,9 +935,11 @@
       <div class="results-title">
         <span class="results-brand" id="resultBrandName"></span> 브랜드 가이드라인
       </div>
-      <button class="btn-pdf" onclick="exportPDF()">
-        ↓ PDF 저장
-      </button>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span class="edit-notice" id="editNotice">클릭하여 편집</span>
+        <button class="btn-edit" id="editBtn" onclick="toggleEditMode()">✎ 편집</button>
+        <button class="btn-pdf" onclick="exportPDF()">↓ PDF 저장</button>
+      </div>
     </div>
 
     <div id="resultContent">
@@ -819,6 +975,9 @@ function toggleTheme() {
     });
   }
 })();
+
+// 페이지 로드 시 히스토리 표시
+window.addEventListener('DOMContentLoaded', renderHistoryPanel);
 
 const loadingMessages = [
   "브랜드 DNA 분석 중...",
@@ -863,6 +1022,8 @@ async function generate() {
   const targetCustomer = document.getElementById('targetCustomer').value.trim();
   const keywords = document.getElementById('keywords').value.trim();
   const extra = document.getElementById('extra').value.trim();
+  const category = document.getElementById('category').value;
+  const model = document.getElementById('modelSelect').value;
 
   hideError();
 
@@ -886,6 +1047,7 @@ async function generate() {
 - 소개: ${brandDesc}
 - 타겟: ${targetCustomer}
 - 키워드: ${keywords}
+${category ? `- 업종/카테고리: ${category}` : ''}
 ${extra ? `- 추가 정보: ${extra}` : ''}
 
 반드시 아래 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
@@ -941,7 +1103,7 @@ ${extra ? `- 추가 정보: ${extra}` : ''}
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: model,
         max_tokens: 2000,
         messages: [
           { role: 'system', content: '당신은 전문 브랜드 전략가이자 크리에이티브 디렉터입니다. 요청에 따라 순수 JSON만 출력합니다.' },
@@ -962,6 +1124,7 @@ ${extra ? `- 추가 정보: ${extra}` : ''}
 
     stopLoadingAnim();
     document.getElementById('loading').classList.remove('visible');
+    saveToHistory(brandName, category, result);
     renderResults(brandName, result);
 
   } catch (e) {
@@ -974,6 +1137,13 @@ ${extra ? `- 추가 정보: ${extra}` : ''}
 }
 
 function renderResults(brandName, data) {
+  // 편집 모드 초기화
+  editMode = false;
+  const editBtn = document.getElementById('editBtn');
+  const editNotice = document.getElementById('editNotice');
+  if (editBtn) { editBtn.classList.remove('active'); editBtn.textContent = '✎ 편집'; }
+  if (editNotice) editNotice.classList.remove('visible');
+
   document.getElementById('formSection').style.display = 'none';
   document.getElementById('resultBrandName').textContent = brandName;
 
@@ -993,10 +1163,10 @@ function renderResults(brandName, data) {
     <div class="section-card">
       <div class="section-label">01 — Brand Personality</div>
       <div class="section-title">브랜드 퍼스널리티</div>
-      <div class="personality-desc">${p.description}</div>
+      <div class="personality-desc editable">${p.description}</div>
       <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">SNS 말투 예시</div>
       <div class="sns-examples">
-        ${p.sns_examples.map(ex => `<div class="sns-bubble">${ex}</div>`).join('')}
+        ${p.sns_examples.map(ex => `<div class="sns-bubble editable">${ex}</div>`).join('')}
       </div>
     </div>`;
 
@@ -1044,11 +1214,11 @@ function renderResults(brandName, data) {
       <div class="voice-grid">
         <div class="voice-col">
           <div class="voice-header do">✓ DO</div>
-          ${v.do.map(d => `<div class="voice-item do">${d}</div>`).join('')}
+          ${v.do.map(d => `<div class="voice-item do editable">${d}</div>`).join('')}
         </div>
         <div class="voice-col">
           <div class="voice-header dont">✕ DON'T</div>
-          ${v.dont.map(d => `<div class="voice-item dont">${d}</div>`).join('')}
+          ${v.dont.map(d => `<div class="voice-item dont editable">${d}</div>`).join('')}
         </div>
       </div>
     </div>`;
@@ -1060,10 +1230,10 @@ function renderResults(brandName, data) {
     <div class="section-card">
       <div class="section-label">05 — Logo Direction</div>
       <div class="section-title">로고 방향성</div>
-      <div class="logo-style">${l.style}</div>
+      <div class="logo-style editable">${l.style}</div>
       <div class="mj-prompt-box">
         <div class="mj-label">Midjourney Prompt</div>
-        <div class="mj-text" id="${mjId}">${l.midjourney_prompt}</div>
+        <div class="mj-text editable" id="${mjId}">${l.midjourney_prompt}</div>
         <button class="btn-copy" onclick="copyText('${mjId}', this)">복사</button>
       </div>
     </div>`;
@@ -1079,8 +1249,8 @@ function renderResults(brandName, data) {
           <div class="slogan-item">
             <div class="slogan-num">0${i+1}</div>
             <div class="slogan-content">
-              <div class="slogan-text">${sl.text}</div>
-              <div class="slogan-desc">${sl.description}</div>
+              <div class="slogan-text editable">${sl.text}</div>
+              <div class="slogan-desc editable">${sl.description}</div>
             </div>
           </div>`).join('')}
       </div>
@@ -1108,6 +1278,75 @@ function exportPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
   html2pdf().set(opt).from(el).save();
+}
+
+// ── 히스토리 ──────────────────────────────────────
+const HISTORY_KEY = 'brandHistory';
+const MAX_HISTORY = 10;
+
+function saveToHistory(brandName, category, data) {
+  const history = getHistory();
+  history.unshift({ id: Date.now(), brandName, category: category || '일반', date: new Date().toLocaleDateString('ko-KR'), data });
+  if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistoryPanel();
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function renderHistoryPanel() {
+  const history = getHistory();
+  const panel = document.getElementById('historyPanel');
+  const list = document.getElementById('historyList');
+  const countEl = document.getElementById('historyCount');
+  if (history.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  countEl.textContent = `${history.length}개`;
+  list.innerHTML = history.map((entry, i) => `
+    <div class="history-item" onclick="restoreHistory(${i})">
+      <div class="history-item-info">
+        <div class="history-item-name">${entry.brandName}</div>
+        <div class="history-item-meta">${entry.category} · ${entry.date}</div>
+      </div>
+      <button class="history-item-del" onclick="deleteHistory(event,${i})">✕</button>
+    </div>`).join('');
+}
+
+function toggleHistoryPanel() {
+  document.getElementById('historyPanel').classList.toggle('open');
+}
+
+function restoreHistory(index) {
+  const entry = getHistory()[index];
+  if (!entry) return;
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('resultBrandName').textContent = entry.brandName;
+  renderResults(entry.brandName, entry.data);
+}
+
+function deleteHistory(e, index) {
+  e.stopPropagation();
+  const history = getHistory();
+  history.splice(index, 1);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistoryPanel();
+}
+
+// ── 편집 모드 ──────────────────────────────────────
+let editMode = false;
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('editBtn');
+  const notice = document.getElementById('editNotice');
+  document.querySelectorAll('.editable').forEach(el => {
+    el.contentEditable = editMode ? 'true' : 'false';
+  });
+  btn.classList.toggle('active', editMode);
+  btn.textContent = editMode ? '✓ 편집 완료' : '✎ 편집';
+  notice.classList.toggle('visible', editMode);
 }
 
 function resetForm() {
