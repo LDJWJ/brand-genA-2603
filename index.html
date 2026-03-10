@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 브랜드 가이드라인 생성기</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0e0d;
+    --surface: #1a1917;
+    --surface2: #242220;
+    --border: #2e2c29;
+    --accent: #e8c547;
+    --accent2: #c9a227;
+    --text: #f0ece4;
+    --text-muted: #7a7368;
+    --text-dim: #4a4640;
+    --danger: #e05a3a;
+    --success: #4caf7d;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --toggle-bg: #2e2c29;
+    --toggle-knob: #e8c547;
+    --shadow: rgba(0,0,0,0.3);
+  }
+
+  :root.light {
+    --bg: #f5f2ec;
+    --surface: #ffffff;
+    --surface2: #f0ece4;
+    --border: #e0d9cc;
+    --accent: #b8860b;
+    --accent2: #9a6e00;
+    --text: #1a1712;
+    --text-muted: #7a6e5a;
+    --text-dim: #b0a898;
+    --danger: #c0392b;
+    --success: #27724f;
+    --toggle-bg: #e0d9cc;
+    --toggle-knob: #b8860b;
+    --shadow: rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  * { transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(232,197,71,0.04) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(232,197,71,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    transition: none;
+  }
+
+  /* Theme Toggle Button */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .theme-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    user-select: none;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    cursor: pointer;
+  }
+
+  .toggle-switch input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: background 0.35s, border-color 0.35s;
+  }
+
+  .toggle-knob {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 18px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.35s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .toggle-switch.active .toggle-knob {
+    transform: translateX(24px);
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 60px 0 40px;
+    text-align: center;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .logo-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  h1 span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--text-muted);
+    font-weight: 300;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Form */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .form-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  label span {
+    color: var(--accent);
+    margin-left: 2px;
+  }
+
+  input, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  input[type="password"] {
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 2px;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--text-dim);
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #1e1d1b;
+    box-shadow: 0 0 0 3px rgba(232, 197, 71, 0.08);
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .key-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .key-notice::before {
+    content: '🔒';
+    font-size: 12px;
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    color: #0f0e0d;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-generate:hover {
+    background: #f0d050;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(232, 197, 71, 0.25);
+  }
+
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .loading.visible { display: block; }
+
+  .spinner {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .loading-steps {
+    margin-top: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Error */
+  .error-box {
+    display: none;
+    background: rgba(224, 90, 58, 0.1);
+    border: 1px solid rgba(224, 90, 58, 0.3);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    color: #e05a3a;
+    font-size: 14px;
+    margin: 20px 0;
+  }
+
+  .error-box.visible { display: block; }
+
+  /* Results */
+  #results {
+    display: none;
+    margin: 20px 0 60px;
+  }
+
+  #results.visible { display: block; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .results-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .results-brand {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .btn-pdf {
+    padding: 12px 24px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-pdf:hover {
+    background: var(--accent);
+    color: #0f0e0d;
+  }
+
+  /* Section Cards */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-card:nth-child(1) { animation-delay: 0.0s; }
+  .section-card:nth-child(2) { animation-delay: 0.1s; }
+  .section-card:nth-child(3) { animation-delay: 0.2s; }
+  .section-card:nth-child(4) { animation-delay: 0.3s; }
+  .section-card:nth-child(5) { animation-delay: 0.4s; }
+  .section-card:nth-child(6) { animation-delay: 0.5s; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+
+  /* Personality */
+  .personality-desc {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #c8c0b0;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--accent);
+  }
+
+  .sns-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .sns-bubble {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 18px 18px 18px 4px;
+    padding: 12px 18px;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+    position: relative;
+  }
+
+  /* Colors */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .color-item {
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .color-swatch {
+    height: 100px;
+    transition: transform 0.2s;
+  }
+
+  .color-info {
+    background: var(--surface2);
+    padding: 14px;
+  }
+
+  .color-role {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .color-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .color-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Typography */
+  .font-items { display: flex; flex-direction: column; gap: 16px; }
+
+  .font-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .font-role {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .font-name {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .font-preview {
+    font-size: 24px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  /* Voice */
+  .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .voice-col { display: flex; flex-direction: column; gap: 10px; }
+
+  .voice-header {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .voice-header.do { background: rgba(76, 175, 125, 0.15); color: var(--success); }
+  .voice-header.dont { background: rgba(224, 90, 58, 0.15); color: var(--danger); }
+
+  .voice-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c8c0b0;
+  }
+
+  .voice-item.do { border-left: 3px solid var(--success); }
+  .voice-item.dont { border-left: 3px solid var(--danger); }
+
+  /* Logo */
+  .logo-style {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #c8c0b0;
+    margin-bottom: 20px;
+  }
+
+  .mj-prompt-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    position: relative;
+  }
+
+  .mj-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .mj-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  .btn-copy {
+    position: absolute;
+    top: 12px; right: 12px;
+    padding: 6px 12px;
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-copy:hover { background: var(--accent); color: #0f0e0d; }
+
+  /* Slogans */
+  .slogan-grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .slogan-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .slogan-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: var(--text-dim);
+    font-weight: 900;
+    line-height: 1;
+    min-width: 32px;
+  }
+
+  .slogan-content {}
+
+  .slogan-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+  }
+
+  .slogan-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Reset btn */
+  .btn-reset {
+    display: block;
+    margin: 0 auto 40px;
+    padding: 12px 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-reset:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .color-grid { grid-template-columns: 1fr; }
+    .voice-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 24px; }
+    .section-card { padding: 24px; }
+  }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Theme Toggle -->
+<div class="theme-toggle">
+  <span class="theme-label" id="themeLabel">Dark</span>
+  <div class="toggle-switch" id="toggleSwitch" onclick="toggleTheme()">
+    <div class="toggle-track">
+      <div class="toggle-knob" id="toggleKnob">🌙</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="logo-mark">
+      <div class="logo-dot"></div>
+      <span class="logo-text">AI Brand Studio</span>
+    </div>
+    <h1>브랜드 <span>가이드라인</span><br>생성기</h1>
+    <p class="subtitle">브랜드 정보를 입력하면 AI가 완성된 브랜드 가이드라인을 자동으로 만들어드립니다</p>
+  </header>
+
+  <!-- Form -->
+  <div class="form-card" id="formSection">
+    <div class="form-grid">
+
+      <div class="form-group full">
+        <label>OpenAI API Key <span>*</span></label>
+        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
+        <span class="key-notice">페이지를 새로고침하면 키가 자동으로 사라집니다. 저장되지 않아요.</span>
+      </div>
+
+      <div class="form-group">
+        <label>브랜드 이름 <span>*</span></label>
+        <input type="text" id="brandName" placeholder="예: 모모 카페">
+      </div>
+
+      <div class="form-group">
+        <label>타겟 고객 <span>*</span></label>
+        <input type="text" id="targetCustomer" placeholder="예: 20-30대 직장인 여성">
+      </div>
+
+      <div class="form-group full">
+        <label>브랜드 한 줄 소개 <span>*</span></label>
+        <input type="text" id="brandDesc" placeholder="예: 바쁜 일상 속 작은 쉼표가 되는 감성 카페">
+      </div>
+
+      <div class="form-group full">
+        <label>브랜드 분위기 키워드 <span>*</span></label>
+        <input type="text" id="keywords" placeholder="예: 따뜻한, 아늑한, 감성적인, 신뢰감 있는">
+      </div>
+
+      <div class="form-group full">
+        <label>추가 설명 (선택)</label>
+        <textarea id="extra" placeholder="경쟁사, 참고 브랜드, 특별히 원하는 방향 등 자유롭게 적어주세요"></textarea>
+      </div>
+
+    </div>
+
+    <hr class="divider">
+
+    <div id="errorBox" class="error-box"></div>
+
+    <button class="btn-generate" id="generateBtn" onclick="generate()">
+      ✦ 브랜드 가이드라인 생성하기
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">AI가 브랜드를 분석하고 있어요...</div>
+    <div class="loading-steps" id="loadingStep">퍼스널리티 설계 중</div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="results-header">
+      <div class="results-title">
+        <span class="results-brand" id="resultBrandName"></span> 브랜드 가이드라인
+      </div>
+      <button class="btn-pdf" onclick="exportPDF()">
+        ↓ PDF 저장
+      </button>
+    </div>
+
+    <div id="resultContent">
+      <!-- Dynamically filled -->
+    </div>
+
+    <button class="btn-reset" onclick="resetForm()">← 새로운 브랜드 만들기</button>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const toggle = document.getElementById('toggleSwitch');
+  const knob = document.getElementById('toggleKnob');
+  const label = document.getElementById('themeLabel');
+  const isLight = root.classList.toggle('light');
+  toggle.classList.toggle('active', isLight);
+  knob.textContent = isLight ? '☀️' : '🌙';
+  label.textContent = isLight ? 'Light' : 'Dark';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+
+// 저장된 테마 복원
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    // DOM 로드 후 UI 동기화
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('toggleSwitch').classList.add('active');
+      document.getElementById('toggleKnob').textContent = '☀️';
+      document.getElementById('themeLabel').textContent = 'Light';
+    });
+  }
+})();
+
+const loadingMessages = [
+  "브랜드 DNA 분석 중...",
+  "퍼스널리티 설계 중...",
+  "컬러 팔레트 구성 중...",
+  "타이포그래피 매칭 중...",
+  "브랜드 보이스 작성 중...",
+  "슬로건 후보 생성 중...",
+  "가이드라인 완성 중..."
+];
+
+let loadingInterval;
+
+function startLoadingAnim() {
+  let i = 0;
+  const el = document.getElementById('loadingStep');
+  el.textContent = loadingMessages[0];
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % loadingMessages.length;
+    el.textContent = loadingMessages[i];
+  }, 1200);
+}
+
+function stopLoadingAnim() {
+  clearInterval(loadingInterval);
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('visible');
+}
+
+async function generate() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const brandName = document.getElementById('brandName').value.trim();
+  const brandDesc = document.getElementById('brandDesc').value.trim();
+  const targetCustomer = document.getElementById('targetCustomer').value.trim();
+  const keywords = document.getElementById('keywords').value.trim();
+  const extra = document.getElementById('extra').value.trim();
+
+  hideError();
+
+  if (!apiKey) return showError('OpenAI API Key를 입력해주세요.');
+  if (!brandName) return showError('브랜드 이름을 입력해주세요.');
+  if (!brandDesc) return showError('브랜드 소개를 입력해주세요.');
+  if (!targetCustomer) return showError('타겟 고객을 입력해주세요.');
+  if (!keywords) return showError('분위기 키워드를 입력해주세요.');
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('formSection').style.opacity = '0.4';
+  document.getElementById('loading').classList.add('visible');
+  startLoadingAnim();
+
+  const prompt = `
+당신은 세계적인 브랜드 전략가이자 크리에이티브 디렉터입니다.
+아래 브랜드 정보를 분석하여 완성된 브랜드 가이드라인을 JSON으로 만들어주세요.
+
+브랜드 정보:
+- 브랜드명: ${brandName}
+- 소개: ${brandDesc}
+- 타겟: ${targetCustomer}
+- 키워드: ${keywords}
+${extra ? `- 추가 정보: ${extra}` : ''}
+
+반드시 아래 JSON 형식으로만 응답하세요. 마크다운 코드블록 없이 순수 JSON만 출력하세요.
+
+{
+  "personality": {
+    "description": "브랜드를 사람으로 표현한 성격과 가치관 (3-4문장, 구체적으로)",
+    "sns_examples": [
+      "SNS 게시글 말투 예시 1",
+      "SNS 게시글 말투 예시 2",
+      "SNS 게시글 말투 예시 3"
+    ]
+  },
+  "colors": [
+    { "role": "Primary", "hex": "#XXXXXX", "name": "색상 이름" },
+    { "role": "Secondary", "hex": "#XXXXXX", "name": "색상 이름" },
+    { "role": "Accent", "hex": "#XXXXXX", "name": "색상 이름" }
+  ],
+  "typography": [
+    { "role": "헤드라인", "font": "Google Fonts 폰트명", "preview": "브랜드를 표현하는 문장" },
+    { "role": "본문", "font": "Google Fonts 폰트명", "preview": "자연스럽고 읽기 편안한 본문 예시 문장입니다." },
+    { "role": "강조", "font": "Google Fonts 폰트명", "preview": "핵심 메시지" }
+  ],
+  "voice": {
+    "do": [
+      "DO 예시 문장 1",
+      "DO 예시 문장 2",
+      "DO 예시 문장 3"
+    ],
+    "dont": [
+      "DON'T 예시 문장 1",
+      "DON'T 예시 문장 2",
+      "DON'T 예시 문장 3"
+    ]
+  },
+  "logo": {
+    "style": "어울리는 로고 스타일과 방향성 설명 (2-3문장)",
+    "midjourney_prompt": "영문 Midjourney 프롬프트"
+  },
+  "slogans": [
+    { "text": "슬로건 1", "description": "이 슬로건의 의미와 효과" },
+    { "text": "슬로건 2", "description": "이 슬로건의 의미와 효과" },
+    { "text": "슬로건 3", "description": "이 슬로건의 의미와 효과" }
+  ]
+}
+`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 2000,
+        messages: [
+          { role: 'system', content: '당신은 전문 브랜드 전략가이자 크리에이티브 디렉터입니다. 요청에 따라 순수 JSON만 출력합니다.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `API 오류 (${res.status})`);
+    }
+
+    const data = await res.json();
+    let raw = data.choices[0].message.content.trim();
+    raw = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    stopLoadingAnim();
+    document.getElementById('loading').classList.remove('visible');
+    renderResults(brandName, result);
+
+  } catch (e) {
+    stopLoadingAnim();
+    document.getElementById('loading').classList.remove('visible');
+    document.getElementById('formSection').style.opacity = '1';
+    document.getElementById('generateBtn').disabled = false;
+    showError('오류: ' + e.message);
+  }
+}
+
+function renderResults(brandName, data) {
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('resultBrandName').textContent = brandName;
+
+  // Load Google Fonts for typography
+  const fonts = data.typography.map(t => t.font.replace(/ /g, '+')).join('|');
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${fonts}&display=swap`;
+  document.head.appendChild(link);
+
+  const container = document.getElementById('resultContent');
+  container.innerHTML = '';
+
+  // 1. Personality
+  const p = data.personality;
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">01 — Brand Personality</div>
+      <div class="section-title">브랜드 퍼스널리티</div>
+      <div class="personality-desc">${p.description}</div>
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">SNS 말투 예시</div>
+      <div class="sns-examples">
+        ${p.sns_examples.map(ex => `<div class="sns-bubble">${ex}</div>`).join('')}
+      </div>
+    </div>`;
+
+  // 2. Colors
+  const colors = data.colors;
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">02 — Color Palette</div>
+      <div class="section-title">컬러 팔레트</div>
+      <div class="color-grid">
+        ${colors.map(c => `
+          <div class="color-item">
+            <div class="color-swatch" style="background:${c.hex}"></div>
+            <div class="color-info">
+              <div class="color-role">${c.role}</div>
+              <div class="color-name">${c.name}</div>
+              <div class="color-hex">${c.hex}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // 3. Typography
+  const typo = data.typography;
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">03 — Typography</div>
+      <div class="section-title">타이포그래피</div>
+      <div class="font-items">
+        ${typo.map(t => `
+          <div class="font-item">
+            <div class="font-role">${t.role}</div>
+            <div class="font-name">${t.font}</div>
+            <div class="font-preview" style="font-family:'${t.font}',sans-serif">${t.preview}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // 4. Voice & Tone
+  const v = data.voice;
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">04 — Voice & Tone</div>
+      <div class="section-title">브랜드 보이스</div>
+      <div class="voice-grid">
+        <div class="voice-col">
+          <div class="voice-header do">✓ DO</div>
+          ${v.do.map(d => `<div class="voice-item do">${d}</div>`).join('')}
+        </div>
+        <div class="voice-col">
+          <div class="voice-header dont">✕ DON'T</div>
+          ${v.dont.map(d => `<div class="voice-item dont">${d}</div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  // 5. Logo
+  const l = data.logo;
+  const mjId = 'mjPrompt';
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">05 — Logo Direction</div>
+      <div class="section-title">로고 방향성</div>
+      <div class="logo-style">${l.style}</div>
+      <div class="mj-prompt-box">
+        <div class="mj-label">Midjourney Prompt</div>
+        <div class="mj-text" id="${mjId}">${l.midjourney_prompt}</div>
+        <button class="btn-copy" onclick="copyText('${mjId}', this)">복사</button>
+      </div>
+    </div>`;
+
+  // 6. Slogans
+  const s = data.slogans;
+  container.innerHTML += `
+    <div class="section-card">
+      <div class="section-label">06 — Brand Slogans</div>
+      <div class="section-title">브랜드 슬로건 후보</div>
+      <div class="slogan-grid">
+        ${s.map((sl, i) => `
+          <div class="slogan-item">
+            <div class="slogan-num">0${i+1}</div>
+            <div class="slogan-content">
+              <div class="slogan-text">${sl.text}</div>
+              <div class="slogan-desc">${sl.description}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyText(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '복사됨!';
+    setTimeout(() => btn.textContent = '복사', 1500);
+  });
+}
+
+function exportPDF() {
+  const el = document.getElementById('resultContent');
+  const opt = {
+    margin: 10,
+    filename: `브랜드가이드라인_${document.getElementById('resultBrandName').textContent}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, backgroundColor: '#0f0e0d' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(el).save();
+}
+
+function resetForm() {
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('formSection').style.display = '';
+  document.getElementById('formSection').style.opacity = '1';
+  document.getElementById('generateBtn').disabled = false;
+  document.getElementById('resultContent').innerHTML = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
